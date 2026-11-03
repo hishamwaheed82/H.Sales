@@ -1,0 +1,16 @@
+<Project>
+
+  <!--
+    H.Platform is a separate repository. During local development it is
+    consumed from a sibling checkout via ProjectReference; on CI and for
+    publishing it is consumed as NuGet packages.
+
+    Set HPlatformSource=Package (or define it in CI) to switch.
+  -->
+  <PropertyGroup>
+    <HPlatformSource Condition="'$(HPlatformSource)' == ''">Project</HPlatformSource>
+    <HPlatformProjectRoot Condition="'$(HPlatformProjectRoot)' == ''">$(MSBuildThisFileDirectory)..\H.Platform\src\</HPlatformProjectRoot>
+    <HPlatformPackageVersion Condition="'$(HPlatformPackageVersion)' == ''">1.0.0</HPlatformPackageVersion>
+  </PropertyGroup>
+
+</Project>

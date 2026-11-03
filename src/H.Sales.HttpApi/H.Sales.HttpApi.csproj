@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <RootNamespace>H.Sales</RootNamespace>
+    <AssemblyName>H.Sales.HttpApi</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="$(AbpVersion)" />
+    <ProjectReference Include="..\H.Sales.Application.Contracts\H.Sales.Application.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
+

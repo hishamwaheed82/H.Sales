@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <RootNamespace>H.Sales</RootNamespace>
+    <AssemblyName>H.Sales.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.Ddd.Application" Version="$(AbpVersion)" />
+    <PackageReference Include="Volo.Abp.AutoMapper" Version="$(AbpVersion)" />
+    <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="$(AbpVersion)" />
+    <PackageReference Include="Volo.Abp.TenantManagement.Application" Version="$(AbpVersion)" />
+    <PackageReference Include="Volo.Abp.Identity.Application" Version="$(AbpVersion)" />
+    <ProjectReference Include="..\H.Sales.Domain\H.Sales.Domain.csproj" />
+    <ProjectReference Include="..\H.Sales.Application.Contracts\H.Sales.Application.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(HPlatformSource)' == 'Project'">
+    <ProjectReference Include="$(HPlatformProjectRoot)H.Platform.Application\H.Platform.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HPlatformSource)' == 'Package'">
+    <PackageReference Include="H.Platform.Application" Version="$(HPlatformPackageVersion)" />
+  </ItemGroup>
+
+</Project>
+

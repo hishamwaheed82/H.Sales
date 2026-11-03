@@ -1,0 +1,14 @@
+{
+  "culture": "en",
+  "texts": {
+    "Sales:40001": "A supplier with this code already exists.",
+    "Sales:40002": "Only draft invoices can be modified.",
+    "Sales:40003": "The invoice is already posted.",
+    "Sales:40004": "Supplier not found.",
+    "Sales:40005": "Invoice not found.",
+    "Sales:40006": "Invoice must have at least one line.",
+    "Sales:40007": "Quantity must be greater than zero.",
+    "Sales:40008": "Unit cost must be greater than or equal to zero."
+  }
+}
+

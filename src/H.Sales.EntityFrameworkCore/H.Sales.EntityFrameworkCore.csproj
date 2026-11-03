@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <RootNamespace>H.Sales</RootNamespace>
+    <AssemblyName>H.Sales.EntityFrameworkCore</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore" Version="$(AbpVersion)" />
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore.SqlServer" Version="$(AbpVersion)" />
+    <!-- Design-time only: this module owns its own migrations. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" PrivateAssets="all" />
+    <ProjectReference Include="..\H.Sales.Domain\H.Sales.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(HPlatformSource)' == 'Project'">
+    <ProjectReference Include="$(HPlatformProjectRoot)H.Platform.EntityFrameworkCore\H.Platform.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HPlatformSource)' == 'Package'">
+    <PackageReference Include="H.Platform.EntityFrameworkCore" Version="$(HPlatformPackageVersion)" />
+  </ItemGroup>
+
+</Project>
+

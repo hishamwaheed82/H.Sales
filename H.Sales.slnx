@@ -1,0 +1,13 @@
+﻿<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/H.Sales.Domain.Shared/H.Sales.Domain.Shared.csproj" />
+    <Project Path="src/H.Sales.Domain/H.Sales.Domain.csproj" />
+    <Project Path="src/H.Sales.Application.Contracts/H.Sales.Application.Contracts.csproj" />
+    <Project Path="src/H.Sales.Application/H.Sales.Application.csproj" />
+    <Project Path="src/H.Sales.EntityFrameworkCore/H.Sales.EntityFrameworkCore.csproj" />
+    <Project Path="src/H.Sales.HttpApi/H.Sales.HttpApi.csproj" />
+    <Project Path="src/H.Sales.HttpApi.Host/H.Sales.HttpApi.Host.csproj" />
+    <Project Path="src/H.Sales.DbMigrator/H.Sales.DbMigrator.csproj" />
+  </Folder>
+</Solution>
+

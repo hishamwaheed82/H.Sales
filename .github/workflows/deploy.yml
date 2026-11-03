@@ -1,16 +1,16 @@
 # ============================================================================
-# H.Purchases - CI/CD
+# H.Sales - CI/CD
 #
 # Layout on the runner:
-#   $GITHUB_WORKSPACE\H.Purchases  <- this repo
-#   $GITHUB_WORKSPACE\H.Platform   <- sibling private repo (PAT checkout)
+#   $GITHUB_WORKSPACE\H.Sales     <- this repo
+#   $GITHUB_WORKSPACE\H.Platform  <- sibling private repo (PAT checkout)
 #
 # Jobs:
 #   build   : every push / PR -> restore, build, test (if any), publish,
 #             idempotent EF migration script -> artifacts
 #   migrate-db + deploy : manual "Run workflow" only
 # ============================================================================
-name: H.Purchases CI/CD
+name: H.Sales CI/CD
 
 on:
   push:
@@ -26,7 +26,7 @@ on:
         default: false
 
 concurrency:
-  group: h-purchases-${{ github.ref }}
+  group: h-sales-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -38,10 +38,10 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
   CONFIGURATION: Release
-  SOLUTION: H.Purchases.slnx
-  HOST_PROJECT: src/H.Purchases.HttpApi.Host/H.Purchases.HttpApi.Host.csproj
-  EF_PROJECT: src/H.Purchases.EntityFrameworkCore
-  EF_CONTEXT: PurchasesDbContext
+  SOLUTION: H.Sales.slnx
+  HOST_PROJECT: src/H.Sales.HttpApi.Host/H.Sales.HttpApi.Host.csproj
+  EF_PROJECT: src/H.Sales.EntityFrameworkCore
+  EF_CONTEXT: SalesDbContext
 
 jobs:
   build:
@@ -50,12 +50,12 @@ jobs:
     defaults:
       run:
         shell: pwsh
-        working-directory: H.Purchases
+        working-directory: H.Sales
     steps:
-      - name: Checkout H.Purchases
+      - name: Checkout H.Sales
         uses: actions/checkout@v4
         with:
-          path: H.Purchases
+          path: H.Sales
 
       - name: Checkout H.Platform (private sibling repo)
         uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.NUGET_PACKAGES }}
-          key: nuget-${{ runner.os }}-${{ hashFiles('H.Purchases/**/*.csproj', 'H.Purchases/*.props', 'H.Platform/**/*.csproj', 'H.Platform/**/*.props') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('H.Sales/**/*.csproj', 'H.Sales/*.props', 'H.Platform/**/*.csproj', 'H.Platform/**/*.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Restore
@@ -95,10 +95,10 @@ jobs:
       - name: Publish host
         run: >
           dotnet publish $env:HOST_PROJECT -c $env:CONFIGURATION --no-build
-          -o "$env:GITHUB_WORKSPACE/out/Purchases"
+          -o "$env:GITHUB_WORKSPACE/out/Sales"
 
       - name: Sanitize publish output
-        working-directory: out/Purchases
+        working-directory: out/Sales
         run: |
           Remove-Item -Force -ErrorAction SilentlyContinue appsettings.Production.json, appsettings.secrets.json, appsettings.Development.json
           Get-ChildItem -Recurse -Include *.pfx | Remove-Item -Force
@@ -133,52 +133,52 @@ jobs:
           --configuration $env:CONFIGURATION --no-build
           --project $env:EF_PROJECT --startup-project $env:EF_PROJECT
           --context $env:EF_CONTEXT
-          --output "$env:GITHUB_WORKSPACE/out/sql/Purchases-migrations.sql"
+          --output "$env:GITHUB_WORKSPACE/out/sql/Sales-migrations.sql"
 
       - name: Apply with sqlcmd
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && !inputs.skip_migrations
         env:
-          SQL_SERVER: ${{ secrets.PU_SQL_SERVER }}
-          SQL_DATABASE: ${{ secrets.PU_SQL_DATABASE }}
-          SQL_USER: ${{ secrets.PU_SQL_USER }}
-          SQLCMDPASSWORD: ${{ secrets.PU_SQL_PASSWORD }}
+          SQL_SERVER: ${{ secrets.SAL_SQL_SERVER }}
+          SQL_DATABASE: ${{ secrets.SAL_SQL_DATABASE }}
+          SQL_USER: ${{ secrets.SAL_SQL_USER }}
+          SQLCMDPASSWORD: ${{ secrets.SAL_SQL_PASSWORD }}
         run: |
-          sqlcmd -S $env:SQL_SERVER -d $env:SQL_DATABASE -U $env:SQL_USER -C -b -l 30 -I -i "$env:GITHUB_WORKSPACE/out/sql/Purchases-migrations.sql"
+          sqlcmd -S $env:SQL_SERVER -d $env:SQL_DATABASE -U $env:SQL_USER -C -b -l 30 -I -i "$env:GITHUB_WORKSPACE/out/sql/Sales-migrations.sql"
           if ($LASTEXITCODE -ne 0) { throw "sqlcmd failed ($LASTEXITCODE)" }
         shell: pwsh
         working-directory: ${{ github.workspace }}
 
-      - name: Stage Purchases-app
+      - name: Stage Sales-app
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         shell: pwsh
         working-directory: ${{ github.workspace }}
-        run: New-Item -ItemType Directory -Force 'app' | Out-Null; Copy-Item -Recurse -Force 'out/Purchases/*' 'app'
+        run: New-Item -ItemType Directory -Force 'app' | Out-Null; Copy-Item -Recurse -Force 'out/Sales/*' 'app'
 
       - name: Generate appsettings.Production.json from secrets
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:
-          PU_SQL_DATABASE: ${{ secrets.PU_SQL_DATABASE }}
-          PU_SQL_USER: ${{ secrets.PU_SQL_USER }}
-          PU_SQL_PASSWORD: ${{ secrets.PU_SQL_PASSWORD }}
+          SAL_SQL_DATABASE: ${{ secrets.SAL_SQL_DATABASE }}
+          SAL_SQL_USER: ${{ secrets.SAL_SQL_USER }}
+          SAL_SQL_PASSWORD: ${{ secrets.SAL_SQL_PASSWORD }}
           SHARED_SQL_DATABASE: ${{ secrets.SHARED_SQL_DATABASE }}
           SHARED_SQL_USER: ${{ secrets.SHARED_SQL_USER }}
           SHARED_SQL_PASSWORD: ${{ secrets.SHARED_SQL_PASSWORD }}
-          STRING_PASSPHRASE: ${{ secrets.PU_STRING_ENCRYPTION_PASSPHRASE }}
+          STRING_PASSPHRASE: ${{ secrets.SAL_STRING_ENCRYPTION_PASSPHRASE }}
         run: |
-          $pu     = "Server=.;Database=$env:PU_SQL_DATABASE;User Id=$env:PU_SQL_USER;Password=$env:PU_SQL_PASSWORD;TrustServerCertificate=True;Encrypt=True"
+          $sal    = "Server=.;Database=$env:SAL_SQL_DATABASE;User Id=$env:SAL_SQL_USER;Password=$env:SAL_SQL_PASSWORD;TrustServerCertificate=True;Encrypt=True"
           $shared = "Server=.;Database=$env:SHARED_SQL_DATABASE;User Id=$env:SHARED_SQL_USER;Password=$env:SHARED_SQL_PASSWORD;TrustServerCertificate=True;Encrypt=True"
           $cfg = [ordered]@{
             App = [ordered]@{
-              SelfUrl     = 'https://purchases-api.soft-planning.com'
-              CorsOrigins = 'https://purchases.soft-planning.com'
+              SelfUrl     = 'https://sales-api.soft-planning.com'
+              CorsOrigins = 'https://sales.soft-planning.com'
             }
             AuthServer = [ordered]@{
               Authority            = 'https://auth.soft-planning.com'
-              Audience             = 'H.Purchases'
+              Audience             = 'H.Sales'
               RequireHttpsMetadata = $true
             }
             ConnectionStrings = [ordered]@{
-              Purchases               = $pu
+              Sales                   = $sal
               Platform                = $shared
               AbpPermissionManagement = $shared
               AbpSettingManagement    = $shared
@@ -199,7 +199,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:
           WD_SERVER: ${{ secrets.WEBDEPLOY_SERVER }}
-          WD_SITE: ${{ secrets.PU_WEBDEPLOY_SITE }}
+          WD_SITE: ${{ secrets.SAL_WEBDEPLOY_SITE }}  # e.g. sales-api.soft-planning.com
           WD_USER: ${{ secrets.WEBDEPLOY_USERNAME }}
           WD_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
@@ -229,7 +229,7 @@ jobs:
       - name: Smoke test /swagger
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:
-          SITE_URL: https://purchases-api.soft-planning.com
+          SITE_URL: https://sales-api.soft-planning.com
         run: |
           Start-Sleep -Seconds 15
           for ($i = 1; $i -le 10; $i++) {

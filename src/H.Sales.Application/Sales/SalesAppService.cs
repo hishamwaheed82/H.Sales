@@ -20,6 +20,7 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
     private readonly IGuidGenerator                     _guids;
     private readonly SalesGlPoster                      _glPoster;
     private readonly SalesStockPoster                   _stockPoster;
+    private readonly InventoryStockClient               _inventoryClient;
 
     public SalesAppService(
         IRepository<Customer, Guid>     customers,
@@ -27,14 +28,16 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         SalesInvoiceManager             manager,
         IGuidGenerator                  guids,
         SalesGlPoster                   glPoster,
-        SalesStockPoster                stockPoster)
+        SalesStockPoster                stockPoster,
+        InventoryStockClient            inventoryClient)
     {
-        _customers   = customers;
-        _invoices    = invoices;
-        _manager     = manager;
-        _guids       = guids;
-        _glPoster    = glPoster;
-        _stockPoster = stockPoster;
+        _customers       = customers;
+        _invoices        = invoices;
+        _manager         = manager;
+        _guids           = guids;
+        _glPoster        = glPoster;
+        _stockPoster     = stockPoster;
+        _inventoryClient = inventoryClient;
     }
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
@@ -47,10 +50,16 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
             .OrderByDescending(i => i.DocDate).ThenByDescending(i => i.Number)
             .Take(40).ToList();
 
+        // Best-effort Inventory lookups (H_Ops_Machine). Empty when Inventory is down.
+        var warehouses = await _inventoryClient.ListWarehousesAsync(CurrentTenant.Id);
+        var items      = await _inventoryClient.ListItemsAsync(CurrentTenant.Id);
+
         return new SalesBootstrapDto
         {
             Customers      = customers.Select(MapCustomer).ToList(),
-            RecentInvoices = recent.Select(i => MapInvoice(i, customers)).ToList()
+            RecentInvoices = recent.Select(i => MapInvoice(i, customers)).ToList(),
+            Warehouses     = warehouses,
+            Items          = items
         };
     }
 

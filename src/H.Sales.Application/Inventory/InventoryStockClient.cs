@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -6,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using H.Sales.Inventory;
+using H.Sales.Sales;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -149,6 +152,155 @@ public class InventoryStockClient
             _logger.LogError(ex, "[Sales→Inventory] HTTP call to Inventory failed for Reference={Reference}", request.Reference);
             return (false, null);
         }
+    }
+
+    /// <summary>
+    /// Best-effort warehouse list from Inventory GET /api/v1/warehouses.
+    /// Returns empty list when Inventory is unavailable or misconfigured.
+    /// </summary>
+    public async Task<List<WarehouseLookupDto>> ListWarehousesAsync(
+        Guid? tenantId,
+        CancellationToken ct = default)
+    {
+        var (ok, root) = await TryGetInventoryJsonAsync("api/v1/warehouses", tenantId, ct);
+        if (!ok || root.ValueKind == JsonValueKind.Undefined)
+            return new List<WarehouseLookupDto>();
+
+        return ParseWarehouseArray(root);
+    }
+
+    /// <summary>
+    /// Best-effort item list from Inventory GET /api/v1/items.
+    /// Returns empty list when Inventory is unavailable or misconfigured.
+    /// </summary>
+    public async Task<List<ItemLookupDto>> ListItemsAsync(
+        Guid? tenantId,
+        CancellationToken ct = default)
+    {
+        var (ok, root) = await TryGetInventoryJsonAsync("api/v1/items", tenantId, ct);
+        if (!ok || root.ValueKind == JsonValueKind.Undefined)
+            return new List<ItemLookupDto>();
+
+        return ParseItemArray(root);
+    }
+
+    private async Task<(bool Ok, JsonElement Root)> TryGetInventoryJsonAsync(
+        string relativeUrl,
+        Guid? tenantId,
+        CancellationToken ct)
+    {
+        var opts = _options.Value;
+        if (string.IsNullOrWhiteSpace(opts.InventoryBaseUrl))
+        {
+            _logger.LogDebug("[Sales→Inventory] InventoryBaseUrl not configured — lookup {Url} skipped.", relativeUrl);
+            return (false, default);
+        }
+
+        string? token;
+        try
+        {
+            token = await GetMachineTokenAsync(opts, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Sales→Inventory] Machine token failed — lookup {Url} skipped.", relativeUrl);
+            return (false, default);
+        }
+
+        if (string.IsNullOrWhiteSpace(token))
+            return (false, default);
+
+        try
+        {
+            using var client = _httpFactory.CreateClient("H.Inventory.Stock");
+            client.BaseAddress = new Uri(opts.InventoryBaseUrl.TrimEnd('/') + "/");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (tenantId.HasValue)
+                client.DefaultRequestHeaders.TryAddWithoutValidation("__tenant", tenantId.Value.ToString());
+
+            using var response = await client.GetAsync(relativeUrl, ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("[Sales→Inventory] Lookup {Url} returned {Status}: {Body}",
+                    relativeUrl, (int)response.StatusCode, body);
+                return (false, default);
+            }
+
+            using var doc = JsonDocument.Parse(body);
+            return (true, doc.RootElement.Clone());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Sales→Inventory] Lookup {Url} failed.", relativeUrl);
+            return (false, default);
+        }
+    }
+
+    private static List<WarehouseLookupDto> ParseWarehouseArray(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Array)
+            return new List<WarehouseLookupDto>();
+
+        var list = new List<WarehouseLookupDto>();
+        foreach (var el in root.EnumerateArray())
+        {
+            if (!TryGetGuid(el, "id", out var id))
+                continue;
+            list.Add(new WarehouseLookupDto
+            {
+                Id        = id,
+                Code      = GetString(el, "code") ?? "",
+                Name      = GetString(el, "name") ?? "",
+                IsDefault = GetBool(el, "isDefault"),
+                IsActive  = GetBool(el, "isActive", defaultValue: true)
+            });
+        }
+        return list.OrderByDescending(w => w.IsDefault).ThenBy(w => w.Code).ToList();
+    }
+
+    private static List<ItemLookupDto> ParseItemArray(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Array)
+            return new List<ItemLookupDto>();
+
+        var list = new List<ItemLookupDto>();
+        foreach (var el in root.EnumerateArray())
+        {
+            if (!TryGetGuid(el, "id", out var id))
+                continue;
+            list.Add(new ItemLookupDto
+            {
+                Id       = id,
+                Code     = GetString(el, "code") ?? "",
+                Name     = GetString(el, "name") ?? "",
+                IsActive = GetBool(el, "isActive", defaultValue: true)
+            });
+        }
+        return list.OrderBy(i => i.Code).ToList();
+    }
+
+    private static bool TryGetGuid(JsonElement el, string name, out Guid id)
+    {
+        id = default;
+        if (!el.TryGetProperty(name, out var prop))
+            return false;
+        if (prop.ValueKind == JsonValueKind.String && Guid.TryParse(prop.GetString(), out id))
+            return true;
+        return prop.TryGetGuid(out id);
+    }
+
+    private static string? GetString(JsonElement el, string name) =>
+        el.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String
+            ? prop.GetString()
+            : null;
+
+    private static bool GetBool(JsonElement el, string name, bool defaultValue = false)
+    {
+        if (!el.TryGetProperty(name, out var prop))
+            return defaultValue;
+        return prop.ValueKind == JsonValueKind.True
+               || (prop.ValueKind == JsonValueKind.False ? false : defaultValue);
     }
 
     /// <summary>

@@ -73,10 +73,33 @@ public class CreateSalesInvoiceDto
     public List<CreateSalesInvoiceLineDto> Lines { get; set; } = new();
 }
 
+// ── Inventory lookups (best-effort via H.Inventory machine client) ────────────
+
+public class WarehouseLookupDto
+{
+    public Guid   Id        { get; set; }
+    public string Code      { get; set; } = "";
+    public string Name      { get; set; } = "";
+    public bool   IsDefault { get; set; }
+    public bool   IsActive  { get; set; }
+}
+
+public class ItemLookupDto
+{
+    public Guid   Id       { get; set; }
+    public string Code     { get; set; } = "";
+    public string Name     { get; set; } = "";
+    public bool   IsActive { get; set; }
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 public class SalesBootstrapDto
 {
-    public List<CustomerDto>        Customers      { get; set; } = new();
-    public List<SalesInvoiceDto>    RecentInvoices { get; set; } = new();
+    public List<CustomerDto>         Customers      { get; set; } = new();
+    public List<SalesInvoiceDto>     RecentInvoices { get; set; } = new();
+    /// <summary>From Inventory (H_Ops_Machine). Empty when Inventory is unavailable.</summary>
+    public List<WarehouseLookupDto>  Warehouses     { get; set; } = new();
+    /// <summary>From Inventory (H_Ops_Machine). Empty when Inventory is unavailable.</summary>
+    public List<ItemLookupDto>       Items          { get; set; } = new();
 }

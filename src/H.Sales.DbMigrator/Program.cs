@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using H.Sales.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using Volo.Abp;
 using Volo.Abp.Data;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.MultiTenancy;
+using Volo.Abp.TenantManagement;
 using Volo.Abp.Uow;
 
 namespace H.Sales.DbMigrator;
@@ -42,7 +44,7 @@ public static class Program
 
             using (var uow = uowManager.Begin(requiresNew: true, isTransactional: false))
             {
-                var provider  = scope.ServiceProvider.GetRequiredService<IDbContextProvider<SalesDbContext>>();
+                var provider = scope.ServiceProvider.GetRequiredService<IDbContextProvider<SalesDbContext>>();
                 var dbContext = await provider.GetDbContextAsync();
                 Log.Information("Applying Sales migrations...");
                 await dbContext.Database.MigrateAsync();
@@ -51,11 +53,32 @@ public static class Program
 
             Log.Information("Seeding Sales demo data...");
             var currentTenant = scope.ServiceProvider.GetRequiredService<ICurrentTenant>();
+            var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+            var tenantRepository = scope.ServiceProvider.GetRequiredService<ITenantRepository>();
+
             using (currentTenant.Change(null))
             using (var uow = uowManager.Begin(requiresNew: true, isTransactional: true))
             {
-                await scope.ServiceProvider.GetRequiredService<IDataSeeder>().SeedAsync();
+                await seeder.SeedAsync(new DataSeedContext(tenantId: null));
                 await uow.CompleteAsync();
+            }
+
+            List<Tenant> tenants;
+            using (var uow = uowManager.Begin(requiresNew: true, isTransactional: false))
+            {
+                tenants = await tenantRepository.GetListAsync();
+                await uow.CompleteAsync();
+            }
+
+            foreach (var tenant in tenants)
+            {
+                Log.Information("Seeding Sales demo data for tenant {TenantName} ({TenantId})...", tenant.Name, tenant.Id);
+                using (currentTenant.Change(tenant.Id))
+                using (var uow = uowManager.Begin(requiresNew: true, isTransactional: true))
+                {
+                    await seeder.SeedAsync(new DataSeedContext(tenant.Id));
+                    await uow.CompleteAsync();
+                }
             }
 
             Log.Information("Sales database is up to date.");

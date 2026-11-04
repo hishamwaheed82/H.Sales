@@ -91,7 +91,7 @@ public class SalesStockPoster
         var request = new CreateStockDocumentRequest
         {
             DocType     = 2, // Issue
-            Date        = invoice.DocDate.ToString("yyyy-MM-dd"),
+            DocDate     = invoice.DocDate.ToString("yyyy-MM-dd"),
             WarehouseId = invoice.WarehouseId.Value,
             Reference   = reference,
             Notes       = $"فاتورة مبيعات {invoice.Number}",

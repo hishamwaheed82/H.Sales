@@ -108,7 +108,8 @@ public class InventoryStockClient
                 return (false, null);
             }
 
-            // Parse document id from response
+            // Parse document id / status from response.
+            // Status may be string ("Posted") or numeric enum (Posted=2).
             using var doc = JsonDocument.Parse(createBody);
             var root = doc.RootElement;
 
@@ -116,13 +117,16 @@ public class InventoryStockClient
                 ? parsedId
                 : null;
 
-            var status = root.TryGetProperty("status", out var statusProp) ? statusProp.GetString() : null;
+            var alreadyPosted = IsPostedStatus(root);
+            var journalNumber = root.TryGetProperty("journalNumber", out var jnProp) ? jnProp.GetString() : null;
 
-            _logger.LogInformation("[Sales→Inventory] Stock document created. Id={DocId} Status={Status} Reference={Reference}",
-                docId, status, request.Reference);
+            _logger.LogInformation(
+                "[Sales→Inventory] Stock document created. Id={DocId} AlreadyPosted={AlreadyPosted} JournalNumber={JournalNumber} Reference={Reference}",
+                docId, alreadyPosted, journalNumber, request.Reference);
 
-            // Step 2: If Inventory didn't auto-post (Post=true not honoured), post explicitly.
-            if (docId.HasValue && !string.Equals(status, "posted", StringComparison.OrdinalIgnoreCase))
+            // Step 2: Only post explicitly when Create left the document as Draft
+            // (Post=true not honoured by older Inventory builds).
+            if (docId.HasValue && !alreadyPosted)
             {
                 using var postResponse = await client.PostAsync($"api/v1/documents/{docId.Value}/post", null, ct);
                 var postBody = await postResponse.Content.ReadAsStringAsync(ct);
@@ -145,6 +149,28 @@ public class InventoryStockClient
             _logger.LogError(ex, "[Sales→Inventory] HTTP call to Inventory failed for Reference={Reference}", request.Reference);
             return (false, null);
         }
+    }
+
+    /// <summary>
+    /// True when Create response already reflects StockDocumentStatus.Posted
+    /// (string "Posted"/"posted" or numeric enum value 2).
+    /// </summary>
+    private static bool IsPostedStatus(JsonElement root)
+    {
+        if (!root.TryGetProperty("status", out var statusProp))
+            return false;
+
+        if (statusProp.ValueKind == JsonValueKind.Number && statusProp.TryGetInt32(out var n))
+            return n == 2; // StockDocumentStatus.Posted
+
+        if (statusProp.ValueKind == JsonValueKind.String)
+        {
+            var s = statusProp.GetString();
+            return string.Equals(s, "posted", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(s, "2", StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     // ── Token acquisition ─────────────────────────────────────────────────────
@@ -193,10 +219,10 @@ public class InventoryStockClient
 
 public class CreateStockDocumentRequest
 {
-    /// <summary>"Issue" for sales, "Receipt" for purchases.</summary>
     /// <summary>StockDocumentType as int: Receipt=1, Issue=2, Transfer=3.</summary>
     public int DocType { get; set; } = 2;
-    public string Date    { get; set; } = string.Empty;
+    /// <summary>Maps to CreateStockDocumentDto.DocDate (ISO date preferred).</summary>
+    public string DocDate { get; set; } = string.Empty;
     public Guid WarehouseId { get; set; }
     public string? Reference { get; set; }
     public string? Notes     { get; set; }

@@ -143,6 +143,10 @@ jobs:
           SQL_USER: ${{ secrets.SAL_SQL_USER }}
           SQLCMDPASSWORD: ${{ secrets.SAL_SQL_PASSWORD }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:SQL_SERVER) -or [string]::IsNullOrWhiteSpace($env:SQL_DATABASE) -or [string]::IsNullOrWhiteSpace($env:SQL_USER) -or [string]::IsNullOrWhiteSpace($env:SQLCMDPASSWORD)) {
+            Write-Host "::warning::SQL_* secrets missing — build OK, migrate-db skipped."
+            exit 0
+          }
           sqlcmd -S $env:SQL_SERVER -d $env:SQL_DATABASE -U $env:SQL_USER -C -b -l 30 -I -i "$env:GITHUB_WORKSPACE/out/sql/Sales-migrations.sql"
           if ($LASTEXITCODE -ne 0) { throw "sqlcmd failed ($LASTEXITCODE)" }
         shell: pwsh
@@ -165,6 +169,13 @@ jobs:
           SHARED_SQL_PASSWORD: ${{ secrets.SHARED_SQL_PASSWORD }}
           STRING_PASSPHRASE: ${{ secrets.SAL_STRING_ENCRYPTION_PASSPHRASE }}
         run: |
+          $req = @('SAL_SQL_DATABASE','SAL_SQL_USER','SAL_SQL_PASSWORD','SHARED_SQL_DATABASE','SHARED_SQL_USER','SHARED_SQL_PASSWORD','STRING_PASSPHRASE')
+          foreach ($v in $req) {
+            if ([string]::IsNullOrWhiteSpace((Get-Item "env:$v" -ErrorAction SilentlyContinue).Value)) {
+              Write-Host "::warning::SQL/appsettings secrets missing — build OK, generate appsettings skipped."
+              exit 0
+            }
+          }
           $sal    = "Server=.;Database=$env:SAL_SQL_DATABASE;User Id=$env:SAL_SQL_USER;Password=$env:SAL_SQL_PASSWORD;TrustServerCertificate=True;Encrypt=True"
           $shared = "Server=.;Database=$env:SHARED_SQL_DATABASE;User Id=$env:SHARED_SQL_USER;Password=$env:SHARED_SQL_PASSWORD;TrustServerCertificate=True;Encrypt=True"
           $cfg = [ordered]@{
@@ -203,6 +214,10 @@ jobs:
           WD_USER: ${{ secrets.WEBDEPLOY_USERNAME }}
           WD_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:WD_SERVER) -or [string]::IsNullOrWhiteSpace($env:WD_SITE) -or [string]::IsNullOrWhiteSpace($env:WD_PASSWORD)) {
+            Write-Host "::warning::WEBDEPLOY_* secrets missing — build OK, deploy skipped."
+            exit 0
+          }
           $msdeploy = "${env:ProgramFiles}\IIS\Microsoft Web Deploy V3\msdeploy.exe"
           if (-not (Test-Path $msdeploy)) { choco install webdeploy -y --no-progress; }
           if (-not (Test-Path $msdeploy)) { throw "msdeploy.exe not found" }
@@ -229,8 +244,15 @@ jobs:
       - name: Smoke test /swagger
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:
+          WD_SERVER: ${{ secrets.WEBDEPLOY_SERVER }}
+          WD_SITE: ${{ secrets.SAL_WEBDEPLOY_SITE }}
+          WD_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
           SITE_URL: https://sales-api.soft-planning.com
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:WD_SERVER) -or [string]::IsNullOrWhiteSpace($env:WD_SITE) -or [string]::IsNullOrWhiteSpace($env:WD_PASSWORD)) {
+            Write-Host "::warning::WEBDEPLOY_* secrets missing — smoke test skipped."
+            exit 0
+          }
           Start-Sleep -Seconds 15
           for ($i = 1; $i -le 10; $i++) {
             $code = curl.exe -s -o NUL -w "%{http_code}" --max-time 30 "$env:SITE_URL/swagger/v1/swagger.json"

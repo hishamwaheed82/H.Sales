@@ -13,4 +13,5 @@ public interface ISalesAppService : IApplicationService
 
     Task<SalesInvoiceDto> CreateInvoiceAsync(CreateSalesInvoiceDto input);
     Task<SalesInvoiceDto> PostInvoiceAsync(Guid id);
+    Task<SalesInvoiceDto> CancelInvoiceAsync(Guid id);
 }

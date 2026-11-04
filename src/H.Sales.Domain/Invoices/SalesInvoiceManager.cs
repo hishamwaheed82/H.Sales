@@ -60,5 +60,20 @@ public class SalesInvoiceManager : DomainService
 
         await _invoices.UpdateAsync(invoice);
     }
+
+    /// <summary>
+    /// Cancels a Draft invoice. Only Draft → Cancelled is allowed.
+    /// </summary>
+    public async Task CancelAsync(SalesInvoice invoice)
+    {
+        Check.NotNull(invoice, nameof(invoice));
+
+        if (invoice.Status != SalesInvoiceStatus.Draft)
+            throw new BusinessException(SALESErrorCodes.InvoiceNotCancellable)
+                .WithData("Status", invoice.Status.ToString());
+
+        invoice.Status = SalesInvoiceStatus.Cancelled;
+        await _invoices.UpdateAsync(invoice);
+    }
 }
 

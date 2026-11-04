@@ -75,6 +75,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
             TenantId = CurrentTenant.Id,
             Code     = input.Code.Trim(),
             Name     = input.Name.Trim(),
+            Phone    = input.Phone,
+            Email    = input.Email,
             IsActive = input.IsActive
         };
         customer.EnsureValid();
@@ -90,6 +92,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
 
         customer.Code     = input.Code.Trim();
         customer.Name     = input.Name.Trim();
+        customer.Phone    = input.Phone;
+        customer.Email    = input.Email;
         customer.IsActive = input.IsActive;
         customer.EnsureValid();
         await _customers.UpdateAsync(customer, autoSave: true);
@@ -168,6 +172,19 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         return MapInvoice(invoice, customers);
     }
 
+    public virtual async Task<SalesInvoiceDto> CancelInvoiceAsync(Guid id)
+    {
+        var query   = await _invoices.WithDetailsAsync(i => i.Lines);
+        var where   = query.Where(i => i.Id == id);
+        var invoice = await AsyncExecuter.FirstOrDefaultAsync(where)
+            ?? throw new BusinessException(SALESErrorCodes.InvoiceNotFound);
+
+        await _manager.CancelAsync(invoice);
+
+        var customers = await _customers.GetListAsync();
+        return MapInvoice(invoice, customers);
+    }
+
     // ── Mappers ───────────────────────────────────────────────────────────────
 
     private static CustomerDto MapCustomer(Customer s) => new()
@@ -175,6 +192,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         Id       = s.Id,
         Code     = s.Code,
         Name     = s.Name,
+        Phone    = s.Phone,
+        Email    = s.Email,
         IsActive = s.IsActive
     };
 

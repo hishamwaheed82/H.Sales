@@ -10,5 +10,6 @@ public static class SALESErrorCodes
     public const string NoLines                 = "SALES:40006";
     public const string InvalidQuantity         = "SALES:40007";
     public const string InvalidUnitCost         = "SALES:40008";
+    public const string InvoiceNotCancellable   = "SALES:40009";
 }
 

@@ -58,4 +58,8 @@ public class SalesV1Controller : SalesController
     [HttpPost("invoices/{id:guid}/post")]
     public Task<SalesInvoiceDto> PostInvoiceAsync(Guid id) =>
         _sales.PostInvoiceAsync(id);
+
+    [HttpPost("invoices/{id:guid}/cancel")]
+    public Task<SalesInvoiceDto> CancelInvoiceAsync(Guid id) =>
+        _sales.CancelInvoiceAsync(id);
 }

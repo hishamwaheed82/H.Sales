@@ -26,6 +26,8 @@ public static class SalesDbContextModelCreatingExtensions
             b.Property(x => x.CommentCount).HasDefaultValue(0);
             b.Property(x => x.Code).IsRequired().HasMaxLength(32);
             b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Phone).HasMaxLength(32);
+            b.Property(x => x.Email).HasMaxLength(128);
             b.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("[IsDeleted] = 0");
         });
 

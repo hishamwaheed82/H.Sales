@@ -90,7 +90,7 @@ public class SalesStockPoster
         // Actual COGS / cost calculation lives in Inventory's stock layer.
         var request = new CreateStockDocumentRequest
         {
-            DocType     = "Issue",
+            DocType     = 2, // Issue
             Date        = invoice.DocDate.ToString("yyyy-MM-dd"),
             WarehouseId = invoice.WarehouseId.Value,
             Reference   = reference,

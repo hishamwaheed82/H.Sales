@@ -10,9 +10,9 @@ namespace H.Sales.Invoices;
 /// Sales invoice header.
 /// Workflow: Draft → Posted.
 /// When posted:
-///   - TODO: Call H.Inventory StockIssue hook (SourceModule=Sales, SourceKey=si:{id})
-///   - TODO: Call H.Accounting GL post hook (SourceModule=Sales, SourceKey=si:{id})
-///           DEBIT AR, CREDIT Revenue / Sales Income
+///   - SalesStockPoster: H.Inventory Issue document (SourceKey=si:{id}, best-effort)
+///   - SalesGlPoster:    H.Accounting GL journal   (SourceKey=si:{id}, best-effort)
+///                       DEBIT AR, CREDIT Revenue / Sales Income
 /// </summary>
 public class SalesInvoice : HTrackedAggregateRoot<Guid>
 {
@@ -36,7 +36,7 @@ public class SalesInvoice : HTrackedAggregateRoot<Guid>
     /// <summary>GL journal number, populated after Accounting integration (SalesGlPoster).</summary>
     public string? JournalNumber { get; set; }
 
-    /// <summary>Stock issue document ID returned from Inventory integration (TODO).</summary>
+    /// <summary>Stock issue document ID returned from Inventory integration (SalesStockPoster).</summary>
     public string? StockDocumentId { get; set; }
 
     public ICollection<SalesInvoiceLine> Lines { get; set; } = new List<SalesInvoiceLine>();

@@ -19,19 +19,22 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
     private readonly SalesInvoiceManager                _manager;
     private readonly IGuidGenerator                     _guids;
     private readonly SalesGlPoster                      _glPoster;
+    private readonly SalesStockPoster                   _stockPoster;
 
     public SalesAppService(
         IRepository<Customer, Guid>     customers,
         IRepository<SalesInvoice, Guid> invoices,
         SalesInvoiceManager             manager,
         IGuidGenerator                  guids,
-        SalesGlPoster                   glPoster)
+        SalesGlPoster                   glPoster,
+        SalesStockPoster                stockPoster)
     {
-        _customers = customers;
-        _invoices  = invoices;
-        _manager   = manager;
-        _guids     = guids;
-        _glPoster  = glPoster;
+        _customers   = customers;
+        _invoices    = invoices;
+        _manager     = manager;
+        _guids       = guids;
+        _glPoster    = glPoster;
+        _stockPoster = stockPoster;
     }
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
@@ -129,6 +132,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         if (input.Post)
         {
             await _manager.PostAsync(invoice, CurrentUser.Id);
+            // Stock issue — best-effort; non-blocking unless RequireStock=true.
+            await _stockPoster.PostIssueAsync(invoice, CurrentTenant.Id);
             // GL post — fire-and-forget on failure (non-blocking; logs warning on error).
             await _glPoster.PostInvoiceJournalAsync(invoice, CurrentTenant.Id);
         }
@@ -145,6 +150,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
 
         await _manager.PostAsync(invoice, CurrentUser.Id);
 
+        // Stock issue — best-effort; non-blocking unless RequireStock=true.
+        await _stockPoster.PostIssueAsync(invoice, CurrentTenant.Id);
         // GL post — fire-and-forget on failure (non-blocking; logs warning on error).
         await _glPoster.PostInvoiceJournalAsync(invoice, CurrentTenant.Id);
 

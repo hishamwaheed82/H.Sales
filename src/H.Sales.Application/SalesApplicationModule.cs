@@ -1,5 +1,6 @@
 ﻿using H.Platform;
 using H.Sales.Gl;
+using H.Sales.Inventory;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Application;
 using Volo.Abp.AutoMapper;
@@ -17,7 +18,7 @@ namespace H.Sales;
     typeof(AbpAutoMapperModule),
     typeof(AbpTenantManagementApplicationModule),
     typeof(AbpIdentityApplicationModule)
-)]
+    )]
 public class SalesApplicationModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -29,16 +30,24 @@ public class SalesApplicationModule : AbpModule
             options.AddMaps<SalesApplicationModule>(validate: false);
         });
 
-        // ── SALES → GL options ────────────────────────────────────────────
+        // ── Sales → GL options ────────────────────────────────────────────────
         context.Services.Configure<SalesGlOptions>(configuration.GetSection(SalesGlOptions.SectionName));
+
+        // ── Sales → Inventory options ─────────────────────────────────────────
+        context.Services.Configure<SalesInventoryOptions>(configuration.GetSection(SalesInventoryOptions.SectionName));
 
         // ── Shared HttpClients ────────────────────────────────────────────────
         context.Services.AddHttpClient("H.Auth");
         context.Services.AddHttpClient("H.Accounting.GL");
+        context.Services.AddHttpClient("H.Inventory.Stock");
 
-        // ── SALES → GL services ───────────────────────────────────────────
+        // ── Sales → GL services ───────────────────────────────────────────────
         context.Services.AddSingleton<AccountingGlClient>();
         context.Services.AddScoped<SalesGlPoster>();
+
+        // ── Sales → Inventory services ────────────────────────────────────────
+        context.Services.AddSingleton<InventoryStockClient>();
+        context.Services.AddScoped<SalesStockPoster>();
 
         context.Services.AddMemoryCache();
     }

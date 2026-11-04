@@ -271,10 +271,12 @@ public class InventoryStockClient
                 continue;
             list.Add(new ItemLookupDto
             {
-                Id       = id,
-                Code     = GetString(el, "code") ?? "",
-                Name     = GetString(el, "name") ?? "",
-                IsActive = GetBool(el, "isActive", defaultValue: true)
+                Id        = id,
+                Code      = GetString(el, "code") ?? "",
+                Name      = GetString(el, "name") ?? "",
+                IsActive  = GetBool(el, "isActive", defaultValue: true),
+                SalePrice = GetDecimal(el, "salePrice"),
+                CostPrice = GetDecimal(el, "costPrice")
             });
         }
         return list.OrderBy(i => i.Code).ToList();
@@ -301,6 +303,17 @@ public class InventoryStockClient
             return defaultValue;
         return prop.ValueKind == JsonValueKind.True
                || (prop.ValueKind == JsonValueKind.False ? false : defaultValue);
+    }
+
+    private static decimal GetDecimal(JsonElement el, string name)
+    {
+        if (!el.TryGetProperty(name, out var prop))
+            return 0m;
+        if (prop.ValueKind == JsonValueKind.Number && prop.TryGetDecimal(out var d))
+            return d;
+        if (prop.ValueKind == JsonValueKind.String && decimal.TryParse(prop.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var ds))
+            return ds;
+        return 0m;
     }
 
     /// <summary>

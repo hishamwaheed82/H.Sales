@@ -8,7 +8,7 @@ namespace H.Sales.Invoices;
 
 /// <summary>
 /// Sales invoice header.
-/// Workflow: Draft → Posted.
+/// Workflow: Draft → Posted, or Draft → Cancelled.
 /// When posted:
 ///   - SalesStockPoster: H.Inventory Issue document (SourceKey=si:{id}, best-effort)
 ///   - SalesGlPoster:    H.Accounting GL journal   (SourceKey=si:{id}, best-effort)

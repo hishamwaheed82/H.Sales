@@ -23,21 +23,8 @@ public class SalesInvoiceManager : DomainService
     }
 
     /// <summary>
-    /// Marks the invoice Posted.
-    ///
-    /// Integration stubs (wire up once the APIs are ready):
-    ///
-    ///   TODO: Inventory — StockIssue
-    ///         Call IInventoryIntegration.CreateStockIssueAsync(
-    ///             sourceModule: "Sales", sourceKey: $"si:{invoice.Id}",
-    ///             warehouseId: invoice.WarehouseId, lines: ...)
-    ///         Store the returned StockDocumentId on invoice.StockDocumentId.
-    ///
-    ///   TODO: Accounting — GL post (SalesGlPoster)
-    ///         SourceModule: "Sales", SourceKey: $"si:{invoice.Id}"
-    ///         DEBIT  Accounts Receivable (AR)  grandTotal
-    ///         CREDIT Revenue / Sales Income     grandTotal
-    ///         Store the returned JournalNumber on invoice.JournalNumber.
+    /// Marks the invoice Posted (domain status only).
+    /// Inventory StockIssue + GL (SalesGlPoster / SourceKey si:{id}) run in the Application layer after this.
     /// </summary>
     public async Task PostAsync(SalesInvoice invoice, Guid? userId)
     {

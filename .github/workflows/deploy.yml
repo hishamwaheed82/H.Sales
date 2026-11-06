@@ -203,6 +203,18 @@ jobs:
             StringEncryption = [ordered]@{
               DefaultPassPhrase = $env:STRING_PASSPHRASE
             }
+            SalesGl = [ordered]@{
+              AccountingBaseUrl = 'https://acc-api.soft-planning.com'
+              ClientId          = 'H_Ops_Machine'
+              ClientSecret      = 'ops-machine-dev-secret'
+              Scope             = 'H.Accounting'
+            }
+            SalesInventory = [ordered]@{
+              InventoryBaseUrl = 'https://inv-api.soft-planning.com'
+              ClientId         = 'H_Ops_Machine'
+              ClientSecret     = 'ops-machine-dev-secret'
+              Scope            = 'H.Inventory'
+            }
           }
           $cfg | ConvertTo-Json -Depth 5 | Set-Content -Path app/appsettings.Production.json -Encoding utf8
           "Generated appsettings.Production.json ($((Get-Item app/appsettings.Production.json).Length) bytes)"

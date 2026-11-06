@@ -51,4 +51,10 @@ public class SalesGlOptions
     /// Demo default: 4101 (Sales Revenue).
     /// </summary>
     public string SalesRevenueAccount { get; set; } = "4101";
+
+    /// <summary>
+    /// Cost center required by Accounting for revenue/expense lines.
+    /// Demo default: CC-100.
+    /// </summary>
+    public string CostCenterCode { get; set; } = "CC-100";
 }

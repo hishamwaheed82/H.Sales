@@ -138,10 +138,11 @@ public class SalesGlPoster
             string.IsNullOrWhiteSpace(opts.SalesRevenueAccount))
             return lines;
 
+        var cc = string.IsNullOrWhiteSpace(opts.CostCenterCode) ? null : opts.CostCenterCode.Trim();
         // DEBIT: Accounts Receivable (customer owes)
-        // CREDIT: Sales Revenue (revenue recognized)
+        // CREDIT: Sales Revenue (revenue recognized — requires cost center)
         lines.Add(new GlLineRequest { Acct = opts.AccountsReceivableAccount, Debit  = grandTotal, Desc = "مدينون — عملاء" });
-        lines.Add(new GlLineRequest { Acct = opts.SalesRevenueAccount,       Credit = grandTotal, Desc = "إيراد مبيعات" });
+        lines.Add(new GlLineRequest { Acct = opts.SalesRevenueAccount, Credit = grandTotal, Desc = "إيراد مبيعات", Cc = cc });
 
         return lines;
     }

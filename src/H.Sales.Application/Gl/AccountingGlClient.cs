@@ -97,7 +97,11 @@ public class AccountingGlClient
             {
                 using var doc   = JsonDocument.Parse(body);
                 var root        = doc.RootElement;
-                var number      = root.TryGetProperty("number", out var n) ? n.GetString() : null;
+                string? number = null;
+                if (root.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String)
+                    number = idProp.GetString();
+                if (string.IsNullOrWhiteSpace(number) && root.TryGetProperty("number", out var n))
+                    number = n.GetString();
                 var already     = root.TryGetProperty("alreadyExisted", out var ae) && ae.ValueKind == JsonValueKind.True;
                 _logger.LogInformation("[SALES→GL] Journal posted. Number={Number} AlreadyExisted={Already} SourceKey={SourceKey}",
                     number, already, request.SourceKey);

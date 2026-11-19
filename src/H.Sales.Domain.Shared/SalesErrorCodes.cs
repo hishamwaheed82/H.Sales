@@ -11,5 +11,6 @@ public static class SALESErrorCodes
     public const string InvalidQuantity         = "SALES:40007";
     public const string InvalidUnitCost         = "SALES:40008";
     public const string InvoiceNotCancellable   = "SALES:40009";
+    public const string CorruptName             = "SALES:40011";
 }
 

@@ -46,13 +46,16 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
     {
         var customers = await _customers.GetListAsync();
         var query     = await _invoices.WithDetailsAsync(i => i.Lines);
-        var recent    = (await AsyncExecuter.ToListAsync(query))
-            .OrderByDescending(i => i.DocDate).ThenByDescending(i => i.Number)
-            .Take(40).ToList();
+        // Take in the IQueryable — do not materialize the full invoice graph first.
+        var recent = await AsyncExecuter.ToListAsync(
+            query.OrderByDescending(i => i.DocDate).ThenByDescending(i => i.Number).Take(40));
 
-        // Best-effort Inventory lookups (H_Ops_Machine). Empty when Inventory is down.
-        var warehouses = await _inventoryClient.ListWarehousesAsync(CurrentTenant.Id);
-        var items      = await _inventoryClient.ListItemsAsync(CurrentTenant.Id);
+        // Best-effort Inventory lookups in parallel (H_Ops_Machine). Empty when Inventory is down.
+        var warehousesTask = _inventoryClient.ListWarehousesAsync(CurrentTenant.Id);
+        var itemsTask      = _inventoryClient.ListItemsAsync(CurrentTenant.Id);
+        await Task.WhenAll(warehousesTask, itemsTask);
+        var warehouses = await warehousesTask;
+        var items      = await itemsTask;
 
         return new SalesBootstrapDto
         {

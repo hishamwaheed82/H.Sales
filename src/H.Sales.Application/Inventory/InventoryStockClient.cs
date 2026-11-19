@@ -162,11 +162,17 @@ public class InventoryStockClient
         Guid? tenantId,
         CancellationToken ct = default)
     {
+        var cacheKey = $"SalesInventory_Warehouses_{tenantId}";
+        if (_cache.TryGetValue(cacheKey, out List<WarehouseLookupDto>? cached) && cached != null)
+            return cached;
+
         var (ok, root) = await TryGetInventoryJsonAsync("api/v1/warehouses", tenantId, ct);
         if (!ok || root.ValueKind == JsonValueKind.Undefined)
             return new List<WarehouseLookupDto>();
 
-        return ParseWarehouseArray(root);
+        var list = ParseWarehouseArray(root);
+        _cache.Set(cacheKey, list, TimeSpan.FromMinutes(5));
+        return list;
     }
 
     /// <summary>
@@ -177,11 +183,17 @@ public class InventoryStockClient
         Guid? tenantId,
         CancellationToken ct = default)
     {
+        var cacheKey = $"SalesInventory_Items_{tenantId}";
+        if (_cache.TryGetValue(cacheKey, out List<ItemLookupDto>? cached) && cached != null)
+            return cached;
+
         var (ok, root) = await TryGetInventoryJsonAsync("api/v1/items", tenantId, ct);
         if (!ok || root.ValueKind == JsonValueKind.Undefined)
             return new List<ItemLookupDto>();
 
-        return ParseItemArray(root);
+        var list = ParseItemArray(root);
+        _cache.Set(cacheKey, list, TimeSpan.FromMinutes(5));
+        return list;
     }
 
     private async Task<(bool Ok, JsonElement Root)> TryGetInventoryJsonAsync(

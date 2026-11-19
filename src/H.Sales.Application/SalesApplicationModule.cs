@@ -1,4 +1,5 @@
-﻿using H.Platform;
+﻿using System;
+using H.Platform;
 using H.Sales.Gl;
 using H.Sales.Inventory;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +40,8 @@ public class SalesApplicationModule : AbpModule
         // ── Shared HttpClients ────────────────────────────────────────────────
         context.Services.AddHttpClient("H.Auth");
         context.Services.AddHttpClient("H.Accounting.GL");
-        context.Services.AddHttpClient("H.Inventory.Stock");
+        context.Services.AddHttpClient("H.Inventory.Stock")
+            .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(5));
 
         // ── Sales → GL services ───────────────────────────────────────────────
         context.Services.AddSingleton<AccountingGlClient>();

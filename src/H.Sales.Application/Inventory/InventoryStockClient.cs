@@ -224,7 +224,7 @@ public class InventoryStockClient
 
         try
         {
-            using var client = _httpFactory.CreateClient("H.Inventory.Stock");
+            using var client = _httpFactory.CreateClient("H.Inventory.Lookup");
             client.BaseAddress = new Uri(opts.InventoryBaseUrl.TrimEnd('/') + "/");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (tenantId.HasValue)

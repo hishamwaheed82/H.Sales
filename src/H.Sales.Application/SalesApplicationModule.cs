@@ -40,7 +40,10 @@ public class SalesApplicationModule : AbpModule
         // ── Shared HttpClients ────────────────────────────────────────────────
         context.Services.AddHttpClient("H.Auth");
         context.Services.AddHttpClient("H.Accounting.GL");
-        context.Services.AddHttpClient("H.Inventory.Stock")
+        // Posting keeps the default HttpClient timeout — Inventory create/post can be slow.
+        context.Services.AddHttpClient("H.Inventory.Stock");
+        // Bootstrap lookups get a short timeout so a down Inventory does not hang Sales.
+        context.Services.AddHttpClient("H.Inventory.Lookup")
             .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(5));
 
         // ── Sales → GL services ───────────────────────────────────────────────

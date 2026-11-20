@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using H.Platform;
 using H.Sales.Invoices;
 using H.Sales.Customers;
 using Microsoft.AspNetCore.Authorization;
@@ -73,6 +74,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         if (await _customers.AnyAsync(s => s.Code == input.Code))
             throw new BusinessException(SALESErrorCodes.DuplicateCustomerCode).WithData("Code", input.Code);
 
+        NameSanity.EnsureNotCorrupt(input.Name, nameof(input.Name), SALESErrorCodes.CorruptName);
+
         var customer = new Customer(_guids.Create())
         {
             TenantId = CurrentTenant.Id,
@@ -92,6 +95,8 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         var customer = await _customers.GetAsync(id);
         if (await _customers.AnyAsync(s => s.Code == input.Code && s.Id != id))
             throw new BusinessException(SALESErrorCodes.DuplicateCustomerCode).WithData("Code", input.Code);
+
+        NameSanity.EnsureNotCorrupt(input.Name, nameof(input.Name), SALESErrorCodes.CorruptName, customer.Name);
 
         customer.Code     = input.Code.Trim();
         customer.Name     = input.Name.Trim();

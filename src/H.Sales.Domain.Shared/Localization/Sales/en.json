@@ -1,14 +1,15 @@
 {
   "culture": "en",
   "texts": {
-    "Sales:40001": "A supplier with this code already exists.",
-    "Sales:40002": "Only draft invoices can be modified.",
-    "Sales:40003": "The invoice is already posted.",
-    "Sales:40004": "Supplier not found.",
-    "Sales:40005": "Invoice not found.",
-    "Sales:40006": "Invoice must have at least one line.",
-    "Sales:40007": "Quantity must be greater than zero.",
-    "Sales:40008": "Unit cost must be greater than or equal to zero."
+    "SALES:40001": "A customer with this code already exists.",
+    "SALES:40002": "Only draft invoices can be modified.",
+    "SALES:40003": "The invoice is already posted.",
+    "SALES:40004": "Customer not found.",
+    "SALES:40005": "Invoice not found.",
+    "SALES:40006": "Invoice must have at least one line.",
+    "SALES:40007": "Quantity must be greater than zero.",
+    "SALES:40008": "Unit cost must be greater than or equal to zero.",
+    "SALES:40009": "This invoice cannot be cancelled.",
+    "SALES:40011": "Invalid name (question marks only). Please re-enter."
   }
 }
-

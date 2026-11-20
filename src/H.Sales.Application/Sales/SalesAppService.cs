@@ -93,7 +93,7 @@ public class SalesAppService : H.Sales.SalesAppService, ISalesAppService
         if (await _customers.AnyAsync(s => s.Code == input.Code && s.Id != id))
             throw new BusinessException(SALESErrorCodes.DuplicateCustomerCode).WithData("Code", input.Code);
 
-        NameSanity.EnsureNotCorrupt(input.Name, nameof(input.Name), SALESErrorCodes.CorruptName);
+        NameSanity.EnsureNotCorrupt(input.Name, nameof(input.Name), SALESErrorCodes.CorruptName, customer.Name);
 
         customer.Code     = input.Code.Trim();
         customer.Name     = input.Name.Trim();
